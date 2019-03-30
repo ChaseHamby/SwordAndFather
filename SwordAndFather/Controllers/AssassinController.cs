@@ -54,7 +54,12 @@ namespace SwordAndFather.Controllers
         }
     }
 
-    public class CreateAssassinRequestValidator
+    public interface IValidator<TToValidate> // Interfaces always start with the letter 'I // Anything on interface is implicitly PUBLIC
+    {
+        bool Validate(TToValidate objectToValidate);
+    }
+
+    public class CreateAssassinRequestValidator : IValidator<CreateAssassinRequest> // <<<This tells it to validate right thing on line 57
     {
         public bool Validate(CreateAssassinRequest request)
         {
