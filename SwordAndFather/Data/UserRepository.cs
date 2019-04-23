@@ -31,19 +31,22 @@ namespace SwordAndFather.Data
             connection.Open(); // Open the Connection
 
             var getAllUsersCommand = connection.CreateCommand(); // Create the command
-            getAllUsersCommand.CommandText = "select * from users";
+            getAllUsersCommand.CommandText = @"select username,password,id
+                                               from users";
 
             var reader = getAllUsersCommand.ExecuteReader(); // Excecute the reader! // if you don't care about the result or there won't be any results, use the ExecuteNonQuery
 
             while (reader.Read())
             {
-                var id = (int)reader["Id"];
+                var id = (int)reader["Id"]; //(int) is there to turn it into an int
                 var username = reader["username"].ToString();
                 var password = reader["password"].ToString();
                 var user = new User(username, password) { Id = id };
 
                 users.Add(user);
             }
+
+            connection.Close(); // Close it down!
 
             return users;
         }
