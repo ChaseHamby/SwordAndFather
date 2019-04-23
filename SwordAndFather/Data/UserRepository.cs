@@ -1,6 +1,7 @@
 ﻿using SwordAndFather.Models;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,5 +24,28 @@ namespace SwordAndFather.Data
             return newUser;
         }
 
+        public List<User> GetAll()
+        {
+            var users = new List<User>(); // new list which will be used down at the bottom to add user and then return this list
+            var connection = new SqlConnection("Server = localhost; Database = SwordAndFather; Trusted_Connection = True;");
+            connection.Open(); // Open the Connection
+
+            var getAllUsersCommand = connection.CreateCommand(); // Create the command
+            getAllUsersCommand.CommandText = "select * from users";
+
+            var reader = getAllUsersCommand.ExecuteReader(); // Excecute the reader! // if you don't care about the result or there won't be any results, use the ExecuteNonQuery
+
+            while (reader.Read())
+            {
+                var id = (int)reader["Id"];
+                var username = reader["username"].ToString();
+                var password = reader["password"].ToString();
+                var user = new User(username, password) { Id = id };
+
+                users.Add(user);
+            }
+
+            return users;
+        }
     }
 }
