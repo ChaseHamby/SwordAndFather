@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using Dapper;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,79 +10,67 @@ namespace SwordAndFather.Data
 {
     public class UserRepository
     {
-        //static List<User> _users = new List<User>();
-        //// static ^^^ means you get one of OR all instances of a class
-        //// every instance in this class will share the same instance of users
-
         const string ConnectionString = "Server = localhost; Database = SwordAndFather; Trusted_Connection = True;";
 
         public User AddUser(string username, string password)
         {
-            //var newUser = new User(username, password);
-
-            //newUser.Id = _users.Count + 1;
-
-            //_users.Add(newUser);
-
-            //return newUser;
-
-            using (var connection = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(ConnectionString))
             {
-                connection.Open();
-                var insertUserCommand = connection.CreateCommand();
-                insertUserCommand.CommandText = $@"Insert into Users (username,password)
-                                            Output inserted.*
-                                            Values(@username,@password)";
+                var newUser = db.QueryFirstOrDefault<User>(@"
+                    Insert into Users (username,password) 
+                    Output inserted.*
+                    Values(@username,@password)",
+                    new { username, password }); // setting up the parameters required - property needs to match the values above
 
-                insertUserCommand.Parameters.AddWithValue("username",username);
-                insertUserCommand.Parameters.AddWithValue("password", password);
-
-                var reader = insertUserCommand.ExecuteReader();
-
-                if (reader.Read())
+                if (newUser != null)
                 {
-                    var insertedPassword = reader["password"].ToString();
-                    var insertedUsername = reader["username"].ToString();
-                    var insertedId = (int)reader["Id"];
-
-                    var newUser = new User(insertedUsername, insertedPassword) { Id = insertedId };
-
                     return newUser;
                 }
              }
 
-                throw new Exception("No user found");
+                throw new Exception("No user created");
          }
 
-
-
-
-
-        public List<User> GetAll()
+        public void DeleteUser(int id)
         {
-            var users = new List<User>(); // new list which will be used down at the bottom to add user and then return this list
-            var connection = new SqlConnection("Server = localhost; Database = SwordAndFather; Trusted_Connection = True;");
-            connection.Open(); // Open the Connection
-
-            var getAllUsersCommand = connection.CreateCommand(); // Create the command to interact with SQL
-            getAllUsersCommand.CommandText = @"select username,password,id
-                                               from users";
-
-            var reader = getAllUsersCommand.ExecuteReader(); // Excecute the reader! // if you don't care about the result and just want to know how many things were affected, use the ExecuteNonQuery
-                                                             // ExecuteScalar for top left value - 1 column / 1 row
-            while (reader.Read())
+            using (var db = new SqlConnection(ConnectionString))
             {
-                var id = (int)reader["Id"]; //(int) is there to turn it into an int
-                var username = reader["username"].ToString();
-                var password = reader["password"].ToString();
-                var user = new User(username, password) { Id = id };
+                // Another way to break this out that is different from updating user 
 
-                users.Add(user);
+                var deleteQuery = "Delete from Users where Id = @id";
+
+                var parameter = new { id };
+
+                var rowsAffected = db.Execute(deleteQuery, parameter);
+
+                if (rowsAffected != 1)
+                {
+                    throw new Exception("Didn't do right");
+                }
             }
+        }
 
-            connection.Close(); // Close it down!
+        public User UpdateUser(User userToUpdate)
+        {
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                var rowsAffected = db.Execute(@"update Users
+                           Set username = @username,
+                               password = @password
+                           Where id = @id", userToUpdate);
 
-            return users;
+                if (rowsAffected == 1)
+                    return userToUpdate;
+            }
+            throw new Exception("Could not update user");
+        }
+
+        public IEnumerable<User> GetAll()
+        {
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                return db.Query<User>("select username,password,id from users");
+            }
         }
     }
 }
