@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using Dapper;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace SwordAndFather.Data
 {
@@ -69,7 +68,16 @@ namespace SwordAndFather.Data
         {
             using (var db = new SqlConnection(ConnectionString))
             {
-                return db.Query<User>("select username,password,id from users");
+                var users = db.Query<User>("select username,password,id from users").ToList();
+
+                var targets = db.Query<Target>("select * from targets").ToList();
+
+                foreach (var user in users)
+                {
+                    user.Targets = targets.Where(target => target.UserId == user.Id).ToList();
+                }
+
+                return users;
             }
         }
     }
